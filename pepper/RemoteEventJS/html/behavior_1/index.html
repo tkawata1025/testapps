@@ -1,0 +1,43 @@
+<html>
+<head>
+<meta charset="utf-8">
+<script src="/libs/qimessaging/1.0/qimessaging.js"></script>
+<script type="text/javascript">
+
+var session = null;
+
+function doConnect() 
+{ 
+  if (session == null)
+  {
+    session = new QiSession(document.js.ipaddress.value);
+    session.service("ALMemory").done(function (ALMemory) {
+      ALMemory.subscriber("WordRecognized").done(function (subscriber) {
+        subscriber.signal.connect(function (words) {
+          document.js.wordlog.value = document.js.wordlog.value + "\n" + words;
+        });
+      });
+    });
+    document.js.ipaddress.readOnly=true;
+    document.js.connectButton.value="接続済";
+    document.js.disabled=true;
+  }
+}
+
+
+</script>
+
+</head>
+<body onload="document.js.ipaddress.value=location.host">
+接続するロボットのIP アドレスを指定して[接続]ボタンを押します。接続したそのロボットが聞き取ったワードがテキストエリアに表示されます。
+<br><br>
+<form name="js">
+IPアドレス：<input type="text" name="ipaddress" value="0.0.0.0">
+<input type="button" name="connectButton" value="接続" onclick="doConnect()">
+<br><br>
+<textarea name="wordlog" rows="10" cols="80"></textarea>
+</form>
+</body>
+</html>
+
+
