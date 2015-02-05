@@ -10,14 +10,43 @@ function doConnect()
 { 
   if (session == null)
   {
-    session = new QiSession(document.js.ipaddress.value);
-    session.service("ALMemory").done(function (ALMemory) {
-      ALMemory.subscriber("WordRecognized").done(function (subscriber) {
-        subscriber.signal.connect(function (words) {
-          document.js.wordlog.value = document.js.wordlog.value + "\n" + words;
+    _asr = null;
+    _tts = null;
+    session = null;
+    if (document.js.ipaddress.value == "0.0.0.0")
+    {
+      session = new QiSession();
+    } else {
+      session = new QiSession(document.js.ipaddress.value);
+    }
+    session.service("ALTextToSpeech").done(function (tts) {
+      //tts.say("こんにちは、か、さようなら、と言ってください");
+      _tts = tts;
+
+      session.service("ALSpeechRecognition").done(function (asr) {
+        asr.setVisualExpression(true);
+        asr.setVocabulary(["こんにちは", "さようなら"],false);
+        asr.subscribe("Test_ASR");
+        _asr = asr;
+
+        session.service("ALMemory").done(function (ALMemory) {
+          ALMemory.subscriber("WordRecognized").done(function (subscriber) {
+            subscriber.signal.connect(function (words) {
+              document.js.wordlog.value = document.js.wordlog.value + "\n" + words;
+              if (_tts) {
+                _tts.say(words[0]);
+              }
+              if (_asr) {
+                _asr.unsubscribe("Test_ASR");
+              }
+            });
+          });
         });
+
       });
     });
+
+
     document.js.ipaddress.readOnly=true;
     document.js.connectButton.value="接続済";
     document.js.disabled=true;
@@ -28,8 +57,10 @@ function doConnect()
 </script>
 
 </head>
-<body onload="document.js.ipaddress.value=location.host">
-接続するロボットのIP アドレスを指定して[接続]ボタンを押します。接続したそのロボットが聞き取ったワードがテキストエリアに表示されます。
+<body> <!-- // onload="document.js.ipaddress.value=location.host"> -->
+接続ボタンを押してテスト開始。
+「こんにちは」、か、「さようなら」と言ってください。
+
 <br><br>
 <form name="js">
 IPアドレス：<input type="text" name="ipaddress" value="0.0.0.0">
