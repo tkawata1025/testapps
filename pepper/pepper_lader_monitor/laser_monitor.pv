@@ -1,0 +1,91 @@
+# -*- coding: UTF-8 -*-
+
+import matplotlib.pyplot as pyplot
+import matplotlib.animation as animation
+from naoqi import ALProxy
+
+
+global AX_l
+global AX_f
+global AX_r
+global AX_plots
+global NAOQI_memoryProxy
+global LaserL_watchDataList
+global LaserF_watchDataList
+global LaserR_watchDataList
+
+# animation
+def _update_plot(i):
+
+	dataList_l = NAOQI_memoryProxy.getListData(LaserL_watchDataList)
+	dataList_f = NAOQI_memoryProxy.getListData(LaserF_watchDataList)
+	dataList_r = NAOQI_memoryProxy.getListData(LaserR_watchDataList)
+
+	#remove previous frame
+	while len(AX_plots) > 0:
+		AX_plots[0].remove()
+		AX_plots.pop(0)
+
+	x = range(1,16)
+	width = 0.8
+	
+	for i in range(0,15):
+		if dataList_l[i] == None:
+			dataList_l[i] = 0
+		if dataList_f[i] == None:
+			dataList_f[i] = 0
+		if dataList_r[i] == None:
+			dataList_r[i] = 0
+
+
+
+	AX_plots.append(AX_l.bar(x, dataList_l, width, color='r', edgecolor='k', align="center"))
+	AX_plots.append(AX_f.bar(x, dataList_f, width, color='r', edgecolor='k', align="center"))
+	AX_plots.append(AX_r.bar(x, dataList_r, width, color='r', edgecolor='k', align="center"))
+
+	AX_l.legend(("Left",))
+	AX_f.legend(("Front",))
+	AX_r.legend(("Right",))
+
+
+if __name__ == '__main__':
+	import sys
+	args = sys.argv
+	robotIp = "localhost"
+	robotPort = 9559
+	if len(args) > 1:
+		robotIp = str(args[1])
+	if len(args) > 2:
+		robotPort = int(args[2])
+
+	NAOQI_memoryProxy = ALProxy("ALMemory",robotIp,robotPort)
+
+	fig =  pyplot.figure()
+
+	AX_l = fig.add_subplot(1,3,1)
+	AX_f = fig.add_subplot(1,3,2)
+	AX_r = fig.add_subplot(1,3,3)
+
+	AX_l.set_ylim([0,7.0])
+	AX_f.set_ylim([0,7.0])
+	AX_r.set_ylim([0,7.0])
+
+	AX_l.set_xlim([0,16])
+	AX_f.set_xlim([0,16])
+	AX_r.set_xlim([0,16])
+
+	LaserL_watchDataList = []
+	LaserF_watchDataList = []
+	LaserR_watchDataList = []
+
+	for i in range(1,16):
+		LaserL_watchDataList.append("Device/SubDeviceList/Platform/LaserSensor/Left/Horizontal/Seg%02d/X/Sensor/Value" % i)
+		LaserF_watchDataList.append("Device/SubDeviceList/Platform/LaserSensor/Front/Horizontal/Seg%02d/X/Sensor/Value" % i)
+		LaserR_watchDataList.append("Device/SubDeviceList/Platform/LaserSensor/Right/Horizontal/Seg%02d/X/Sensor/Value" % i)
+
+	AX_plots = [] 
+
+	# start animation
+	ani = animation.FuncAnimation(fig, _update_plot, frames=600, interval = 10) 
+	pyplot.show()
+	
